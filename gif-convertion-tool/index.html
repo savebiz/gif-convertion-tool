@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video to GIF Converter</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>🎬 Video to GIF Converter</h1>
+        <div class="upload-area" id="uploadArea">
+            <div class="upload-icon">📁</div>
+            <div class="upload-text">Drop your video here or click to browse</div>
+            <div class="upload-subtext">Supports MP4, MOV, AVI, WebM and more</div>
+            <input type="file" class="file-input" id="fileInput" accept="video/*">
+        </div>
+        <div class="file-info" id="fileInfo">
+            <h3>File Information:</h3>
+            <p id="fileName"></p>
+            <p id="fileSize"></p>
+            <p id="fileDuration"></p>
+        </div>
+        <div class="error-message" id="errorMessage"></div>
+        <div class="controls" id="controls">
+            <div class="control-group">
+                <label>Choose Mode:</label>
+                <div class="control-row">
+                    <div class="control-item">
+                        <input type="radio" name="mode" id="modeGif" value="gif" checked>
+                        <label for="modeGif">Convert to GIF</label>
+                    </div>
+                    <div class="control-item">
+                        <input type="radio" name="mode" id="modeCompress" value="compress">
+                        <label for="modeCompress">Compress Video</label>
+                    </div>
+                </div>
+            </div>
+            <div id="gifControls">
+                <div class="control-group">
+                    <label>Time Range (seconds):</label>
+                    <div class="control-row">
+                        <div class="control-item">
+                            <input type="number" id="startTime" min="0" step="0.1" placeholder="Start" value="0">
+                        </div>
+                        <div class="control-item">
+                            <input type="number" id="endTime" min="0" step="0.1" placeholder="End" value="10">
+                        </div>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <label>GIF Settings:</label>
+                    <div class="control-row">
+                        <div class="control-item">
+                            <label>Width (px):</label>
+                            <input type="number" id="width" min="50" max="1920" value="480">
+                        </div>
+                        <div class="control-item">
+                            <label>Frame Rate (fps):</label>
+                            <input type="number" id="fps" min="1" max="30" value="10">
+                        </div>
+                        <div class="control-item">
+                            <label>Quality:</label>
+                            <select id="quality">
+                                <option value="high">High</option>
+                                <option value="medium" selected>Medium</option>
+                                <option value="low">Low</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <label for="targetSize">Target File Size (MB) <span style="color:#999;font-weight:normal;">(optional)</span>:</label>
+                    <input type="number" id="targetSize" min="0.1" step="0.1" placeholder="e.g. 2">
+                </div>
+                <button class="convert-btn" id="convertBtn">Convert to GIF</button>
+            </div>
+            <div id="compressControls" style="display:none;">
+                <div class="control-group">
+                    <label for="compressTargetSize">Target File Size (MB):</label>
+                    <input type="number" id="compressTargetSize" min="0.1" step="0.1" placeholder="e.g. 2">
+                </div>
+                <div class="control-group">
+                    <label for="compressQuality">Quality (0-51, lower is better):</label>
+                    <input type="number" id="compressQuality" min="10" max="51" value="28">
+                </div>
+                <button class="convert-btn" id="compressBtn">Compress Video</button>
+            </div>
+        </div>
+        <div class="progress-container" id="progressContainer">
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+            <div class="progress-text" id="progressText">Processing...</div>
+        </div>
+        <div class="preview-container" id="previewContainer">
+            <h3>Your GIF is ready!</h3>
+            <img class="preview-gif" id="previewGif" alt="Generated GIF">
+            <div>
+                <button class="download-btn" id="downloadBtn">Download GIF</button>
+                <button class="download-btn" id="newFileBtn" style="background: #667eea;">Convert Another</button>
+            </div>
+        </div>
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gif.js/0.2.0/gif.min.js"></script>
+    <script src="app.js"></script>
+</body>
+</html> 
