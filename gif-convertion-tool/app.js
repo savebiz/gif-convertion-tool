@@ -58,8 +58,124 @@ if (compressBtn) {
     compressBtn.addEventListener('click', compressVideo);
 }
 
-function compressVideo() {
-    showError('Video compression is not yet implemented.');
+async function compressVideo() {
+    if (!selectedFile) {
+        showError('Please select a video file to compress.');
+        return;
+    }
+    hideError();
+    convertBtn.disabled = true;
+    if (compressBtn) compressBtn.disabled = true;
+    progressContainer.classList.add('active');
+    updateProgress(0, 'Loading FFmpeg...');
+
+    // Get user settings
+    const targetSizeMB = parseFloat(document.getElementById('compressTargetSize').value) || null;
+    const quality = parseInt(document.getElementById('compressQuality').value) || 28;
+    const speed = parseFloat(document.getElementById('speedSelect').value) || 1;
+    const { createFFmpeg, fetchFile } = window.FFmpeg;
+    const ffmpeg = createFFmpeg({ log: true });
+    const inputExt = selectedFile.name.split('.').pop();
+    const inputName = 'input.' + inputExt;
+    const outputName = 'output.' + inputExt;
+
+    try {
+        if (!ffmpeg.isLoaded()) {
+            await ffmpeg.load();
+        }
+        updateProgress(10, 'Preparing video...');
+        await ffmpeg.FS('writeFile', inputName, await fetchFile(selectedFile));
+
+        // If speed is not 1, adjust video and audio speed
+        if (speed !== 1) {
+            // For audio, atempo only supports 0.5-2.0, so chain if needed
+            let atempoFilters = [];
+            let remaining = speed;
+            while (remaining > 2.0) {
+                atempoFilters.push('atempo=2.0');
+                remaining /= 2.0;
+            }
+            while (remaining < 0.5) {
+                atempoFilters.push('atempo=0.5');
+                remaining *= 2.0;
+            }
+            atempoFilters.push(`atempo=${remaining}`);
+            const atempo = atempoFilters.join(',');
+            updateProgress(20, 'Adjusting speed...');
+            await ffmpeg.run(
+                '-i', inputName,
+                '-filter_complex', `[0:v]setpts=${(1/speed).toFixed(3)}*PTS[v];[0:a]${atempo}[a]`,
+                '-map', '[v]',
+                '-map', '[a]',
+                '-preset', 'fast',
+                outputName
+            );
+        } else {
+            // If speed is 1, use previous compression logic
+            // Estimate bitrate if target size is set
+            let bitrateArg = [];
+            if (targetSizeMB) {
+                let duration = 0;
+                if (videoElement && videoElement.duration) {
+                    duration = videoElement.duration;
+                } else {
+                    duration = 10;
+                }
+                const targetKbits = targetSizeMB * 8192;
+                const bitrate = Math.floor(targetKbits / duration);
+                bitrateArg = ['-b:v', bitrate + 'k'];
+            }
+            updateProgress(20, 'Compressing video...');
+            await ffmpeg.run(
+                '-i', inputName,
+                '-vcodec', 'libx264',
+                '-crf', quality.toString(),
+                ...bitrateArg,
+                '-preset', 'fast',
+                '-movflags', '+faststart',
+                outputName
+            );
+        }
+        updateProgress(90, 'Finalizing...');
+        const data = ffmpeg.FS('readFile', outputName);
+        const mimeType = selectedFile.type || 'video/mp4';
+        const compressedBlob = new Blob([data.buffer], { type: mimeType });
+        const url = URL.createObjectURL(compressedBlob);
+        // Show preview and download
+        previewGif.src = '';
+        previewGif.style.display = 'none';
+        previewContainer.classList.add('active');
+        let previewVideo = document.getElementById('previewVideo');
+        if (!previewVideo) {
+            previewVideo = document.createElement('video');
+            previewVideo.id = 'previewVideo';
+            previewVideo.controls = true;
+            previewVideo.style.maxWidth = '100%';
+            previewVideo.style.maxHeight = '400px';
+            previewVideo.style.borderRadius = '10px';
+            previewVideo.style.boxShadow = '0 10px 30px rgba(0,0,0,0.2)';
+            previewContainer.insertBefore(previewVideo, previewContainer.firstChild.nextSibling);
+        }
+        previewVideo.src = url;
+        previewVideo.style.display = '';
+        // Update download button
+        downloadBtn.onclick = function() {
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = selectedFile.name.replace(/\.[^/.]+$/, '') + `-speed${speed}x.` + inputExt;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        };
+        updateProgress(100, `Done! Output size: ${(compressedBlob.size / (1024*1024)).toFixed(2)} MB`);
+    } catch (err) {
+        showError('Video processing failed: ' + err.message);
+        console.error(err);
+    } finally {
+        convertBtn.disabled = false;
+        if (compressBtn) compressBtn.disabled = false;
+        progressContainer.classList.remove('active');
+    }
 }
 
 function handleDragOver(e) {
